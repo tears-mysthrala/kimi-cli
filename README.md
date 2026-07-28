@@ -1,5 +1,8 @@
 # Kimi Code CLI
 
+> [!NOTE]
+> Fork of [MoonshotAI/kimi-cli](https://github.com/MoonshotAI/kimi-cli) maintained for upstream contributions. Open PRs: [#2174](https://github.com/MoonshotAI/kimi-cli/pull/2174), [#2176](https://github.com/MoonshotAI/kimi-cli/pull/2176). All development happens upstream.
+
 [![Commit Activity](https://img.shields.io/github/commit-activity/w/MoonshotAI/kimi-cli)](https://github.com/MoonshotAI/kimi-cli/graphs/commit-activity)
 [![Checks](https://img.shields.io/github/check-runs/MoonshotAI/kimi-cli/main)](https://github.com/MoonshotAI/kimi-cli/actions)
 [![Version](https://img.shields.io/pypi/v/kimi-cli)](https://pypi.org/project/kimi-cli/)
