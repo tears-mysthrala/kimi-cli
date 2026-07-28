@@ -5,6 +5,32 @@ This page documents the changes in each Kimi Code CLI release.
 ## Unreleased
 
 - Core: Fix `UserPromptSubmit` hook receiving an empty string when user input is a list of `ContentPart` objects — the hook now correctly extracts concatenated text content instead of treating non-string input as empty
+
+## 1.49.0 (2026-07-16)
+
+**Highlights**: The completion-token budget for Kimi providers now adapts to the model's remaining context window, reducing context-length overflow errors on long turns
+
+- LLM: Clamp the Kimi completion-token budget to the model's remaining context window — the CLI no longer sends a fixed `max_tokens=32000` but estimates the remaining context for each request and caps `max_completion_tokens` accordingly. Set the new `KIMI_MODEL_MAX_COMPLETION_TOKENS` env var for an explicit hard cap (`KIMI_MODEL_MAX_TOKENS` remains a compatibility alias; `0` or a negative value disables clamping)
+- Kosong: Stop Kimi from automatically sending the legacy `reasoning_effort` parameter when configuring thinking — requests now use `thinking.type` exclusively while preserving explicit legacy passthrough
+- Kosong: Fix empty-string `reasoning_content` from thinking models being dropped from history — a reply that reasoned but ended with empty reasoning was recorded as having no reasoning at all, so Preserved Thinking backends that require `reasoning_content` on every assistant message rejected the next request with a 400
+
+## 1.47.0 (2026-06-05)
+
+- Shell: Guide users to the new standalone Kimi Code — adds a `/upgrade` command that installs it (migrating your config & sessions automatically), a welcome-screen nudge, and a once-per-day tip shown on exit
+- Shell: Show trailing output in tool error briefs when commands fail
+
+## 1.46.0 (2026-05-28)
+
+- Shell: Support styled text in welcome tips
+- ACP: Replay session history on load
+- Core: Prevent TTY hang on exit
+- Core: Close MCP connections during shutdown
+
+## 1.45.0 (2026-05-26)
+
+- Shell: `/clear` is now an alias for `/new` — both commands start a new session; previously `/clear` only cleared context without creating a new session
+- Shell: Fix misleading "Quota exceeded" prefix shown on every 403 error
+
 ## 1.44.0 (2026-05-13)
 
 - Shell: Add slash command alias resolution — aliases such as `/h`, `?`, and `status` now resolve to their canonical commands (`/help`, `/usage`); the completer and help output display alias matches as `/name (alias)` for clarity

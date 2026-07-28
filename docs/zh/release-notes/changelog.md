@@ -5,6 +5,32 @@
 ## 未发布
 
 - Core：修复 `UserPromptSubmit` hook 在用户输入为 `ContentPart` 列表时收到空字符串的问题——hook 现在会正确提取并拼接文本内容，而非将非字符串输入视为空值
+
+## 1.49.0 (2026-07-16)
+
+**亮点**：Kimi 供应商的补全 token 预算现在会根据模型剩余上下文窗口动态调整，减少长轮次中的上下文超限错误
+
+- LLM：将 Kimi 的补全 token 预算钳制在模型剩余上下文窗口内——CLI 不再固定发送 `max_tokens=32000`，而是按每次请求估算剩余上下文并据此设置 `max_completion_tokens` 上限。可通过新的环境变量 `KIMI_MODEL_MAX_COMPLETION_TOKENS` 设置显式硬上限（`KIMI_MODEL_MAX_TOKENS` 仍为兼容别名；设为 `0` 或负值可关闭钳制）
+- Kosong：配置 Thinking 模式时不再自动向 Kimi 请求发送旧版 `reasoning_effort` 参数——请求现在仅使用 `thinking.type`，同时保留显式传递旧版参数的兼容能力
+- Kosong：修复 Thinking 模型返回的空字符串 `reasoning_content` 被从历史中丢弃的问题——此前「思考过但内容为空」的回复会被当作「没有思考」，导致要求每条 Assistant 消息都携带 `reasoning_content` 的 Preserved Thinking 后端在下一次请求时返回 400
+
+## 1.47.0 (2026-06-05)
+
+- Shell：引导用户升级到新版独立 Kimi Code——新增 `/upgrade` 命令一键安装（自动迁移现有配置与会话），并新增欢迎界面提示与每天一次的退出提示
+- Shell：命令执行失败时在工具错误简报中显示末尾输出
+
+## 1.46.0 (2026-05-28)
+
+- Shell：欢迎提示支持样式化文本
+- ACP：加载时回放会话历史
+- Core：修复退出时 TTY 挂起的问题
+- Core：在关闭期间断开 MCP 连接
+
+## 1.45.0 (2026-05-26)
+
+- Shell：`/clear` 现在成为 `/new` 的别名——两者都会启动新会话；此前 `/clear` 仅清空上下文而不创建新会话
+- Shell：修复 403 响应一律显示 "Quota exceeded" 前缀的问题
+
 ## 1.44.0 (2026-05-13)
 
 - Shell：新增斜杠命令别名解析——别名（如 `/h`、`?`、`status`）现在能正确解析到对应的正式命令（`/help`、`/usage`）；补全器和帮助输出会将别名匹配项显示为 `/name (alias)`，方便识别

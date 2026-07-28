@@ -32,6 +32,7 @@ from kimi_cli.ui.shell import update as _update_mod
 from kimi_cli.ui.shell.console import console
 from kimi_cli.ui.shell.echo import render_user_echo_text
 from kimi_cli.ui.shell.mcp_status import render_mcp_prompt
+from kimi_cli.ui.shell.migration_nudge import print_migration_goodbye
 from kimi_cli.ui.shell.prompt import (
     BgTaskCounts,
     CustomPromptSession,
@@ -578,7 +579,7 @@ class Shell:
                         else:
                             bg_auto_failures = 0
                         if self._exit_after_run:
-                            console.print("Bye!")
+                            print_migration_goodbye(console)
                             break
                         continue
 
@@ -596,7 +597,7 @@ class Shell:
                         continue
 
                     if event.kind == "eof":
-                        console.print("Bye!")
+                        print_migration_goodbye(console)
                         break
 
                     if event.kind == "cwd_lost":
@@ -623,7 +624,7 @@ class Shell:
 
                     if self._should_exit_input(user_input):
                         logger.debug("Exiting by slash command")
-                        console.print("Bye!")
+                        print_migration_goodbye(console)
                         break
 
                     if user_input.mode == PromptMode.SHELL:
@@ -668,7 +669,7 @@ class Shell:
                             await self.run_soul_command(slash_cmd_call.raw_input)
                             console.print()
                             if self._exit_after_run:
-                                console.print("Bye!")
+                                print_migration_goodbye(console)
                                 break
                         else:
                             await self._run_slash_command(slash_cmd_call)
@@ -680,7 +681,7 @@ class Shell:
                     await self.run_soul_command(user_input.content)
                     console.print()
                     if self._exit_after_run:
-                        console.print("Bye!")
+                        print_migration_goodbye(console)
                         break
             finally:
                 prompt_task.cancel()
@@ -841,6 +842,14 @@ class Shell:
 
         captured_view: _PromptLiveView | None = None
         pending: list[UserInput] = []  # queued messages being drained
+        get_trace_id: Callable[[], str | None] | None = None
+        if isinstance(self.soul, KimiSoul):
+            root_soul = self.soul
+
+            def get_root_trace_id() -> str | None:
+                return root_soul.root_trace_id
+
+            get_trace_id = get_root_trace_id
 
         try:
             snap = self.soul.status
@@ -870,6 +879,7 @@ class Shell:
                     cancel_event=cancel_event,
                     prompt_session=self._prompt_session,
                     steer=self.soul.steer if isinstance(self.soul, KimiSoul) else None,
+                    get_trace_id=get_trace_id,
                     btw_runner=self._make_btw_runner(),
                     bind_running_input=self._bind_running_input,
                     unbind_running_input=self._unbind_running_input,
@@ -923,6 +933,7 @@ class Shell:
                         cancel_event=cancel_event,
                         prompt_session=self._prompt_session,
                         steer=self.soul.steer if isinstance(self.soul, KimiSoul) else None,
+                        get_trace_id=get_trace_id,
                         btw_runner=self._make_btw_runner(),
                         bind_running_input=self._bind_running_input,
                         unbind_running_input=self._unbind_running_input,
@@ -971,10 +982,7 @@ class Shell:
                     f"[red]Membership expired, please renew your plan[/red]\n[dim]Server: {e}[/dim]"
                 )
             elif isinstance(e, APIStatusError) and e.status_code == 403:
-                console.print(
-                    "[red]Quota exceeded, please upgrade your plan or retry later[/red]\n"
-                    f"[dim]Server: {e}[/dim]"
-                )
+                console.print(f"[red]Server: {e}[/red]")
             elif isinstance(e, APIConnectionError):
                 console.print(
                     f"[red]Network connection failed: {e}[/red]\n"
@@ -1478,7 +1486,7 @@ class WelcomeInfoItem:
         ERROR = "red"
 
     name: str
-    value: str
+    value: str | Text
     level: Level = Level.INFO
 
 
@@ -1498,7 +1506,10 @@ def _print_welcome_info(name: str, info_items: list[WelcomeInfoItem]) -> None:
     if info_items:
         rows.append(Text(""))  # empty line
     for item in info_items:
-        rows.append(Text(f"{item.name}: {item.value}", style=item.level.value))
+        if isinstance(item.value, Text):
+            rows.append(Text.assemble(f"{item.name}: ", item.value, style=item.level.value))
+        else:
+            rows.append(Text(f"{item.name}: {item.value}", style=item.level.value))
 
     if LATEST_VERSION_FILE.exists():
         from kimi_cli.constant import VERSION as current_version

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import sys
 from collections.abc import Awaitable, Callable, Iterable
 from typing import TYPE_CHECKING, Any, cast
 
@@ -534,21 +535,8 @@ async def feedback(app: Shell, args: str):
             _fallback_to_issues()
 
 
-@registry.command(aliases=["reset"])
-async def clear(app: Shell, args: str):
-    """Clear the context"""
-    if ensure_kimi_soul(app) is None:
-        return
-    from kimi_cli.telemetry import track
-
-    track("clear")
-    await app.run_soul_command("/clear")
-    raise Reload()
-
-
-@registry.command
-async def new(app: Shell, args: str):
-    """Start a new session"""
+async def _do_new_session(app: Shell, args: str) -> None:
+    """Shared implementation for /new and /clear."""
     soul = ensure_kimi_soul(app)
     if soul is None:
         return
@@ -565,6 +553,18 @@ async def new(app: Shell, args: str):
     track("session_new")
     console.print("[green]New session created. Switching...[/green]")
     raise Reload(session_id=session.id)
+
+
+@registry.command(aliases=["reset"])
+async def clear(app: Shell, args: str) -> None:
+    """Start a new session (alias for /new)"""
+    await _do_new_session(app, args)
+
+
+@registry.command
+async def new(app: Shell, args: str) -> None:
+    """Start a new session"""
+    await _do_new_session(app, args)
 
 
 @registry.command(name="title", aliases=["rename"])
@@ -717,6 +717,49 @@ def vis(app: Shell, args: str):
     soul = ensure_kimi_soul(app)
     session_id = soul.runtime.session.id if soul else None
     raise SwitchToVis(session_id=session_id)
+
+
+@registry.command
+async def upgrade(app: Shell, args: str):
+    """Install Kimi Code — the faster successor (migrates your config & sessions)"""
+    from kimi_cli.telemetry import track
+    from kimi_cli.ui.shell.migration_nudge import (
+        install_command,
+        install_run_command,
+        verify_command,
+    )
+
+    track("upgrade_invoked")
+
+    cmd = install_command(sys.platform)
+    run_cmd = install_run_command(sys.platform)
+    console.print(
+        "[bold]This will install the new Kimi Code by running:[/bold]\n"
+        f"  [cyan]{cmd}[/cyan]\n"
+        "Your existing config & sessions will be migrated automatically."
+    )
+    try:
+        choice = await ChoiceInput(
+            message="Proceed with installation? (↑↓ navigate, Enter select, Ctrl+C cancel):",
+            options=[("yes", "Yes, install now"), ("no", "No, just show me the command")],
+            default="yes",
+        ).prompt_async()
+    except (EOFError, KeyboardInterrupt):
+        console.print("[grey50]Upgrade cancelled.[/grey50]")
+        return
+
+    if choice != "yes":
+        console.print(f"No problem. To install later, run:\n  [cyan]{cmd}[/cyan]")
+        return
+
+    await app._run_shell_command(run_cmd)  # pyright: ignore[reportPrivateUsage]
+    console.print(
+        "\n[green]The new Kimi Code is installed ✓[/green]  "
+        "Your config & sessions were migrated automatically.\n"
+        "Open a [bold]new terminal[/bold] and run [bold]kimi[/bold] to start it.\n"
+        f"[grey50](Verify with `{verify_command(sys.platform)}` — it should point "
+        "inside ~/.kimi-code.)[/grey50]"
+    )
 
 
 @registry.command
