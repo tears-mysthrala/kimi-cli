@@ -32,6 +32,8 @@ def _make_runnable_soul() -> KimiSoul:
     soul._loop_control = MagicMock()
     soul._loop_control.max_ralph_iterations = 0
 
+    soul._plan_mode = False
+
     soul._agent = MagicMock()
     soul._agent.system_prompt = "sys"
 
