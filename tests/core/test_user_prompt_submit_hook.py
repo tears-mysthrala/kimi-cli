@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from typing import cast
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -58,7 +59,7 @@ async def test_user_prompt_submit_hook_receives_text_from_string() -> None:
     with patch("kimi_cli.soul.kimisoul.wire_send"):
         await soul.run("hello world")
 
-    call_args = soul._hook_engine.trigger.call_args_list[0]
+    call_args = cast(AsyncMock, soul._hook_engine.trigger).call_args_list[0]
     assert call_args[0][0] == "UserPromptSubmit"
     assert call_args[1]["matcher_value"] == "hello world"
     assert call_args[1]["input_data"]["prompt"] == "hello world"
@@ -73,7 +74,7 @@ async def test_user_prompt_submit_hook_receives_text_from_content_parts() -> Non
     with patch("kimi_cli.soul.kimisoul.wire_send"):
         await soul.run(parts)
 
-    call_args = soul._hook_engine.trigger.call_args_list[0]
+    call_args = cast(AsyncMock, soul._hook_engine.trigger).call_args_list[0]
     assert call_args[0][0] == "UserPromptSubmit"
     assert call_args[1]["matcher_value"] == "hello world"
     assert call_args[1]["input_data"]["prompt"] == "hello world"
